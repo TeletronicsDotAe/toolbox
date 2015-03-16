@@ -1,0 +1,149 @@
+package ae.teletronics.cache;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
+// TODO java8 import java.util.function.Function;
+// TODO java8 import java.util.function.Predicate;
+// TODO java8 import java.util.function.Supplier;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
+
+import com.google.common.cache.Cache;
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
+
+public class ChangingValueCache<K, V> {
+	
+	public static class Builder<K, V> {
+		
+		protected final ChangingValueCache<K, V> instance;
+		
+		protected Builder() {
+			instance = createInstance();
+		}
+		
+		protected ChangingValueCache<K, V> createInstance() {
+			return new ChangingValueCache<K, V>();
+		}
+		
+		public Builder<K, V> defaultNewCreator(Supplier<V> newCreator) {
+			instance.defaultNewCreator = newCreator;
+			return this;
+		}
+		
+		public Builder<K, V> defaultModifier(Function<V, V> modifier) {
+			instance.defaultModifier = modifier;
+			return this;
+		}
+		
+		public Builder<K, V> cache(Cache<K, V> cache) {
+			instance.cache = cache;
+			return this;
+		}
+		
+		public ChangingValueCache<K, V> build() {
+			if (instance.getAllCaches().size() < 1)
+				throw new RuntimeException("No inner cache(s) set");
+			
+			return instance;
+		}
+		
+	}
+	
+	protected Supplier<V> defaultNewCreator;
+	protected Function<V, V> defaultModifier;
+	protected Cache<K, V> cache;
+	
+	protected final Interner<Integer> newOrMovingCacheEntryInterner;
+	
+	protected ChangingValueCache() {
+		newOrMovingCacheEntryInterner = Interners.newWeakInterner();
+	}
+	
+	public static <K, V> Builder<K, V> builder() {
+	    return new Builder<K, V>();
+	}
+	
+	public final V modify(K key, boolean createIfNotExists) {
+		return modify(key, null, null, createIfNotExists);
+	}
+	
+	public final V modify(K key, Function<V, V> modifier, boolean createIfNotExists) {
+		return modify(key, modifier, null, createIfNotExists);
+	}
+
+	public final V modify(K key, Supplier<V> newCreator, boolean createIfNotExists) {
+		return modify(key, null, newCreator, createIfNotExists);
+	}
+	
+	public final V modify(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
+		synchronized(newOrMovingCacheEntryInterner.intern(key.hashCode())) {
+			return modifyImpl(key, modifier, newCreator, createIfNotExists);
+		}
+	}
+	
+	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate, boolean createIfNotExists) {
+		modifyAll(keyPredicate, valuePredicate, null, createIfNotExists);
+	}
+	
+	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate, Function<V, V> modifier, boolean createIfNotExists) {
+		for (Cache<K, V> cache : getAllCaches()) {
+			for (Map.Entry<K, V> entry : cache.asMap().entrySet()) {
+				if ((keyPredicate == null || keyPredicate.apply(entry.getKey())) &&
+					(valuePredicate == null || valuePredicate.apply(entry.getValue()))) {
+					modify(entry.getKey(), modifier, createIfNotExists);
+				}
+			}
+		}
+	}
+	
+	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
+		V value = getIfPresent(key);
+		
+		if (value == null) {
+			if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
+		}
+
+		if (value != null) {
+			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
+			
+			if (newValue == null) {
+				cache.invalidate(key);
+			} else {
+				if (newValue != value) {
+					cache.put(key, newValue);
+				}
+			}
+			value = newValue;
+		}
+		return value;
+	}
+	
+	protected Collection<Cache<K, V>> getAllCaches() {
+		Collection<Cache<K, V>> allCaches = new ArrayList<Cache<K, V>>();
+		if (cache != null) {
+			allCaches.add(cache);
+		}
+		return allCaches;
+	}
+	
+	public V getIfPresent(K key) {
+		for (Cache<K, V> cache : getAllCaches()) {
+			V value = cache.getIfPresent(key);
+			if (value != null) return value;
+		}
+		return null;
+	}
+	
+	public V getAddIfNotPresent(K key) {
+		return getAddIfNotPresent(key, null);
+	}
+	
+	public V getAddIfNotPresent(K key, Supplier<V> newCreator) {
+		return modify(key, newCreator, true);
+	}
+
+}

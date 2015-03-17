@@ -85,34 +85,32 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 	
 	@Override
 	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
-		synchronized(newOrMovingCacheEntryInterner.intern(key.hashCode())) {
-			Pair<Cache<K, V>, V> cacheAndValue = getCacheAndValueIfPresent(key);
-			
-			Cache<K, V> oldCache = null;
-			V value = null;
-			if (cacheAndValue == null) {
-				if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
-			} else {
-				oldCache = cacheAndValue._1;
-				value = cacheAndValue._2;
-			}
-
-			if (value != null) {
-				V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
-				if (newValue == null) {
-					if (oldCache != null) oldCache.invalidate(key);
-				} else {
-					Cache<K, V> newCache = cacheForLevel(levelCalculator.apply(key, newValue));
-					if (oldCache != newCache || newValue != value) {
-						if (oldCache != null && oldCache != newCache) oldCache.invalidate(key);
-						if (newCache != null) newCache.put(key, newValue);
-					}
-				}
-				value = newValue;
-			}
-			
-			return value;
+		Pair<Cache<K, V>, V> cacheAndValue = getCacheAndValueIfPresent(key);
+		
+		Cache<K, V> oldCache = null;
+		V value = null;
+		if (cacheAndValue == null) {
+			if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
+		} else {
+			oldCache = cacheAndValue._1;
+			value = cacheAndValue._2;
 		}
+
+		if (value != null) {
+			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
+			if (newValue == null) {
+				if (oldCache != null) oldCache.invalidate(key);
+			} else {
+				Cache<K, V> newCache = cacheForLevel(levelCalculator.apply(key, newValue));
+				if (oldCache != newCache || newValue != value) {
+					if (oldCache != null && oldCache != newCache) oldCache.invalidate(key);
+					if (newCache != null) newCache.put(key, newValue);
+				}
+			}
+			value = newValue;
+		}
+		
+		return value;
 	}
 	
 	@Override

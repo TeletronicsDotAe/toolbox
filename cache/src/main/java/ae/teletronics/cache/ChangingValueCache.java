@@ -103,8 +103,12 @@ public class ChangingValueCache<K, V> {
 	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
 		V value = getIfPresent(key);
 		
+		boolean created = false;
 		if (value == null) {
-			if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
+			if (createIfNotExists) {
+				value = ((newCreator != null)?newCreator:defaultNewCreator).get();
+				created = true;
+			}
 		}
 
 		if (value != null) {
@@ -113,7 +117,7 @@ public class ChangingValueCache<K, V> {
 			if (newValue == null) {
 				cache.invalidate(key);
 			} else {
-				if (newValue != value) {
+				if (created || newValue != value) {
 					cache.put(key, newValue);
 				}
 			}
@@ -136,6 +140,14 @@ public class ChangingValueCache<K, V> {
 			if (value != null) return value;
 		}
 		return null;
+	}
+	
+	public long size() {
+		long size = 0;
+		for (Cache<K, V> cache : getAllCaches()) {
+			size += cache.size();
+		}
+		return size;
 	}
 	
 	public V getAddIfNotPresent(K key) {

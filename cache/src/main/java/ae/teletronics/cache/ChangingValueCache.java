@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+
+
 // TODO java8 import java.util.function.Function;
 // TODO java8 import java.util.function.Predicate;
 // TODO java8 import java.util.function.Supplier;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Supplier;
-
 import com.google.common.cache.Cache;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
@@ -80,8 +81,12 @@ public class ChangingValueCache<K, V> {
 	}
 	
 	public final V modify(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
+		return modify(key, modifier, newCreator, createIfNotExists, false);
+	}
+	
+	public final V modify(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
 		synchronized(newOrMovingCacheEntryInterner.intern(key.hashCode())) {
-			return modifyImpl(key, modifier, newCreator, createIfNotExists);
+			return modifyImpl(key, modifier, newCreator, createIfNotExists, supportRecursiveCalls);
 		}
 	}
 	
@@ -90,39 +95,56 @@ public class ChangingValueCache<K, V> {
 	}
 	
 	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate, Function<V, V> modifier, boolean createIfNotExists) {
+		modifyAll(keyPredicate, valuePredicate, modifier, createIfNotExists, false);
+	}
+	
+	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate, Function<V, V> modifier, boolean createIfNotExists, boolean supportRecursiveCalls) {
 		for (Cache<K, V> cache : getAllCaches()) {
 			for (Map.Entry<K, V> entry : cache.asMap().entrySet()) {
 				if ((keyPredicate == null || keyPredicate.apply(entry.getKey())) &&
 					(valuePredicate == null || valuePredicate.apply(entry.getValue()))) {
-					modify(entry.getKey(), modifier, createIfNotExists);
+					modify(entry.getKey(), modifier, null, createIfNotExists, supportRecursiveCalls);
 				}
 			}
 		}
 	}
 	
-	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
-		V value = getIfPresent(key);
-		
-		boolean created = false;
-		if (value == null) {
-			if (createIfNotExists) {
-				value = ((newCreator != null)?newCreator:defaultNewCreator).get();
-				created = true;
-			}
-		}
-
+	protected ThreadLocal<V> alreadyWorkingOn = new ThreadLocal<V>();
+	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
+		V value = alreadyWorkingOn.get();
 		if (value != null) {
 			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
+			if (newValue != value) throw new RuntimeException("Modifier called modify with a modifier that changed replaced value object with another value object");
+		} else {
+			value = getIfPresent(key);
 			
-			if (newValue == null) {
-				cache.invalidate(key);
-			} else {
-				if (created || newValue != value) {
-					cache.put(key, newValue);
+			boolean created = false;
+			if (value == null) {
+				if (createIfNotExists) {
+					value = ((newCreator != null)?newCreator:defaultNewCreator).get();
+					created = true;
 				}
 			}
-			value = newValue;
+	
+			if (value != null) {
+				if (supportRecursiveCalls) alreadyWorkingOn.set(value);
+				try {
+					V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
+					
+					if (newValue == null) {
+						cache.invalidate(key);
+					} else {
+						if (created || newValue != value) {
+							cache.put(key, newValue);
+						}
+					}
+					value = newValue;
+				} finally {
+					if (supportRecursiveCalls) alreadyWorkingOn.remove();
+				}
+			}
 		}
+		
 		return value;
 	}
 	

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+
 //TODO java8 import java.util.function.Function;
 //TODO java8 import java.util.function.Supplier;
 //TODO java8 import java.util.function.BiFunction;
@@ -84,30 +85,40 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 	}
 	
 	@Override
-	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
-		Pair<Cache<K, V>, V> cacheAndValue = getCacheAndValueIfPresent(key);
-		
-		Cache<K, V> oldCache = null;
-		V value = null;
-		if (cacheAndValue == null) {
-			if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
-		} else {
-			oldCache = cacheAndValue._1;
-			value = cacheAndValue._2;
-		}
-
+	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
+		V value = alreadyWorkingOn.get();
 		if (value != null) {
 			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
-			if (newValue == null) {
-				if (oldCache != null) oldCache.invalidate(key);
+			if (newValue != value) throw new RuntimeException("Modifier called modify with a modifier that changed replaced value object with another value object");
+		} else {
+			Pair<Cache<K, V>, V> cacheAndValue = getCacheAndValueIfPresent(key);
+			
+			Cache<K, V> oldCache = null;
+			if (cacheAndValue == null) {
+				if (createIfNotExists) value = ((newCreator != null)?newCreator:defaultNewCreator).get();
 			} else {
-				Cache<K, V> newCache = cacheForLevel(levelCalculator.apply(key, newValue));
-				if (oldCache != newCache || newValue != value) {
-					if (oldCache != null && oldCache != newCache) oldCache.invalidate(key);
-					if (newCache != null) newCache.put(key, newValue);
+				oldCache = cacheAndValue._1;
+				value = cacheAndValue._2;
+			}
+	
+			if (value != null) {
+				if (supportRecursiveCalls) alreadyWorkingOn.set(value);
+				try {
+					V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
+					if (newValue == null) {
+						if (oldCache != null) oldCache.invalidate(key);
+					} else {
+						Cache<K, V> newCache = cacheForLevel(levelCalculator.apply(key, newValue));
+						if (oldCache != newCache || newValue != value) {
+							if (oldCache != null && oldCache != newCache) oldCache.invalidate(key);
+							if (newCache != null) newCache.put(key, newValue);
+						}
+					}
+					value = newValue;
+				} finally {
+					if (supportRecursiveCalls) alreadyWorkingOn.remove();
 				}
 			}
-			value = newValue;
 		}
 		
 		return value;

@@ -103,7 +103,7 @@ public class ChangingValueCaheTest {
 	
 				@Override
 				public Integer apply(Integer input) {
-					return underTest.modify("Now present", new AddOneModifier(), false);
+					return underTest.modify("Now present", false);
 				}
 				
 			}, new OneNewCreator(), true, true);

@@ -176,8 +176,17 @@ public class ChangingValueCache<K, V> {
 		return getAddIfNotPresent(key, null);
 	}
 	
+	private class NoModificationModifier implements Function<V, V> {
+
+		@Override
+		public V apply(V input) {
+			return input;
+		}
+		
+	}
+	private NoModificationModifier noModificationModifier = new NoModificationModifier(); 
 	public V getAddIfNotPresent(K key, Supplier<V> newCreator) {
-		return modify(key, newCreator, true);
+		return modify(key, noModificationModifier, newCreator, true);
 	}
 
 }

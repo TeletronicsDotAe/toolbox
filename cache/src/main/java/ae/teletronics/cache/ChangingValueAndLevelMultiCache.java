@@ -89,7 +89,7 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 		V value = alreadyWorkingOn.get();
 		if (value != null) {
 			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
-			if (newValue != value) throw new RuntimeException("Modifier called modify with a modifier that changed replaced value object with another value object");
+			if (newValue != value) throw new RuntimeException("Modifier called modify with a modifier that replaced value object with another value object");
 		} else {
 			Pair<Cache<K, V>, V> cacheAndValue = getCacheAndValueIfPresent(key);
 			

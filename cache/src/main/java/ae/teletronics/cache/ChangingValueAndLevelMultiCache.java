@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-
 //TODO java8 import java.util.function.Function;
 //TODO java8 import java.util.function.Supplier;
 //TODO java8 import java.util.function.BiFunction;
@@ -30,6 +29,18 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 		
 		private ChangingValueAndLevelMultiCache<K, V> getInstance() {
 			return (ChangingValueAndLevelMultiCache<K, V>)instance;
+		}
+		
+		public Builder<K, V> defaultNewCreator(Supplier<V> newCreator) {
+			return (Builder<K, V>)super.defaultNewCreator(newCreator);
+		}
+		
+		public Builder<K, V> defaultModifier(Function<V, V> modifier) {
+			return (Builder<K, V>)super.defaultModifier(modifier);
+		}
+		
+		public Builder<K, V> cache(Cache<K, V> cache) {
+			return (Builder<K, V>)super.cache(cache);
 		}
 		
 		public Builder<K,V> levelCalculator(BiFunction<K, V, Integer> levelCalculator) {

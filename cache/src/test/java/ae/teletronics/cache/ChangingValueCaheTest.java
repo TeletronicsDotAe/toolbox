@@ -13,15 +13,22 @@ import com.google.common.cache.CacheBuilder;
 
 public class ChangingValueCaheTest {
 
-	private static final int MAX_SIZE = 10;
+	protected static final int MAX_SIZE = 10;
 	
 	private ChangingValueCache<String, Integer> underTest;
 	
 	@Before
 	public void before() {
-		Cache<String, Integer> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
-		ChangingValueCache.Builder<String, Integer> underTestBuilder = ChangingValueCache.builder();
-		underTest = underTestBuilder.cache(innerCache).defaultModifier(new AddOneModifier()).defaultNewCreator(new ZeroNewCreator()).build();
+		underTest = createCache(new AddOneModifier(), new ZeroNewCreator());
+	}
+	
+	protected <V> ChangingValueCache<String, V> createCache(Function<V, V> addOneModifier, Supplier<V> zeroNewCreator) {
+		Cache<String, V> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
+		ChangingValueCache.Builder<String, V> underTestBuilder = ChangingValueCache.builder();
+		return underTestBuilder
+				.cache(innerCache)
+				.defaultModifier(addOneModifier)
+				.defaultNewCreator(zeroNewCreator).build();
 	}
 	
 	@Test
@@ -81,9 +88,7 @@ public class ChangingValueCaheTest {
 
 	@Test
 	public void testModifySupportRecursiveCalls() {
-		Cache<String, IntegerCarrier> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
-		ChangingValueCache.Builder<String, IntegerCarrier> underTestBuilder = ChangingValueCache.builder();
-		final ChangingValueCache<String, IntegerCarrier> underTest = underTestBuilder.cache(innerCache).defaultModifier(new AddOneIntegerCarrierModifier()).defaultNewCreator(new ZeroIntegerCarrierNewCreator()).build();
+		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
 		assertEquals(6,
 			underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
 	
@@ -98,15 +103,23 @@ public class ChangingValueCaheTest {
 
 	@Test
 	public void testModifySupportRecursiveCallsReplacingValue() {
+		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
 		try {
-			underTest.modify("Now present", new Function<Integer, Integer>() {
+			underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
 	
 				@Override
-				public Integer apply(Integer input) {
-					return underTest.modify("Now present", false);
+				public IntegerCarrier apply(IntegerCarrier input) {
+					return underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
+						@Override
+						public IntegerCarrier apply(IntegerCarrier input) {
+							IntegerCarrier result = new IntegerCarrier();
+							result.val = 11;
+							return result;
+						}
+					}, false);
 				}
 				
-			}, new OneNewCreator(), true, true);
+			}, new OneIntegerCarrierNewCreator(), true, true);
 			fail();
 		} catch (Exception e) {
 			assertTrue(e instanceof RuntimeException);
@@ -265,6 +278,10 @@ public class ChangingValueCaheTest {
 
 	private class ZeroIntegerCarrierNewCreator extends ConstantIntegerCarrierNewCreator {
 		private ZeroIntegerCarrierNewCreator() { super(0); }
+	}
+	
+	private class OneIntegerCarrierNewCreator extends ConstantIntegerCarrierNewCreator {
+		private OneIntegerCarrierNewCreator() { super(0); }
 	}
 
 	private class FiveIntegerCarrierNewCreator extends ConstantIntegerCarrierNewCreator {

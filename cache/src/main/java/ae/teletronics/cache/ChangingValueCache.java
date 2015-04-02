@@ -73,20 +73,20 @@ public class ChangingValueCache<K, V> {
 	}
 	
 	public final V modify(K key, Function<V, V> modifier, boolean createIfNotExists) {
-		return modify(key, modifier, null, createIfNotExists);
+		return modify(key, null, modifier, createIfNotExists);
 	}
 
 	public final V modify(K key, Supplier<V> newCreator, boolean createIfNotExists) {
-		return modify(key, null, newCreator, createIfNotExists);
+		return modify(key, newCreator, null, createIfNotExists);
 	}
 	
-	public final V modify(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists) {
-		return modify(key, modifier, newCreator, createIfNotExists, false);
+	public final V modify(K key, Supplier<V> newCreator, Function<V, V> modifier, boolean createIfNotExists) {
+		return modify(key, newCreator, modifier, createIfNotExists, false);
 	}
 	
-	public final V modify(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
+	public final V modify(K key, Supplier<V> newCreator, Function<V, V> modifier, boolean createIfNotExists, boolean supportRecursiveCalls) {
 		synchronized(newOrMovingCacheEntryInterner.intern(key.hashCode())) {
-			return modifyImpl(key, modifier, newCreator, createIfNotExists, supportRecursiveCalls);
+			return modifyImpl(key, newCreator, modifier, createIfNotExists, supportRecursiveCalls);
 		}
 	}
 	
@@ -103,14 +103,14 @@ public class ChangingValueCache<K, V> {
 			for (Map.Entry<K, V> entry : cache.asMap().entrySet()) {
 				if ((keyPredicate == null || keyPredicate.apply(entry.getKey())) &&
 					(valuePredicate == null || valuePredicate.apply(entry.getValue()))) {
-					modify(entry.getKey(), modifier, null, createIfNotExists, supportRecursiveCalls);
+					modify(entry.getKey(), null, modifier, createIfNotExists, supportRecursiveCalls);
 				}
 			}
 		}
 	}
 	
 	protected ThreadLocal<V> alreadyWorkingOn = new ThreadLocal<V>();
-	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
+	protected V modifyImpl(K key, Supplier<V> newCreator, Function<V, V> modifier, boolean createIfNotExists, boolean supportRecursiveCalls) {
 		V value = alreadyWorkingOn.get();
 		if (value != null) {
 			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);
@@ -186,7 +186,7 @@ public class ChangingValueCache<K, V> {
 	}
 	private NoModificationModifier noModificationModifier = new NoModificationModifier(); 
 	public V getAddIfNotPresent(K key, Supplier<V> newCreator) {
-		return modify(key, noModificationModifier, newCreator, true);
+		return modify(key, newCreator, noModificationModifier, true);
 	}
 
 }

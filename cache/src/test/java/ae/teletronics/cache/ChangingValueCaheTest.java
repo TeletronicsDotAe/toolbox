@@ -79,25 +79,26 @@ public class ChangingValueCaheTest {
 		assertNull(underTest.modify("Not present", new NullNewCreator(), true));
 		assertEquals(2, underTest.modify("Now present 3", new OneNewCreator(), true).intValue());
 		
-		assertNull(underTest.modify("Not present", new NoModificationModifier(), new ZeroNewCreator(), false));
-		assertNull(underTest.modify("Not present", new NoModificationModifier(), new NullNewCreator(), true));
-		assertEquals(1, underTest.modify("Now present 4", new NoModificationModifier(), new OneNewCreator(), true).intValue());
-		assertEquals(1, underTest.modify("Now present 5", new AddOneModifier(), new ZeroNewCreator(), true).intValue());
-		assertEquals(2, underTest.modify("Now present 6", new AddOneModifier(), new OneNewCreator(), true).intValue());
+		assertNull(underTest.modify("Not present", new ZeroNewCreator(), new NoModificationModifier(), false));
+		assertNull(underTest.modify("Not present", new NullNewCreator(), new NoModificationModifier(), true));
+		assertEquals(1, underTest.modify("Now present 4", new OneNewCreator(), new NoModificationModifier(), true).intValue());
+		assertEquals(1, underTest.modify("Now present 5", new ZeroNewCreator(), new AddOneModifier(), true).intValue());
+		assertEquals(2, underTest.modify("Now present 6", new OneNewCreator(), new AddOneModifier(), true).intValue());
 	}
 
 	@Test
 	public void testModifySupportRecursiveCalls() {
 		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
 		assertEquals(6,
-			underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
-	
-				@Override
-				public IntegerCarrier apply(IntegerCarrier input) {
-					return underTest.modify("Now present", new AddOneIntegerCarrierModifier(), false);
-				}
-				
-			}, new FiveIntegerCarrierNewCreator(), true, true).val.intValue()
+			underTest.modify("Now present", new FiveIntegerCarrierNewCreator(),
+					new Function<IntegerCarrier, IntegerCarrier>() {
+			
+						@Override
+						public IntegerCarrier apply(IntegerCarrier input) {
+							return underTest.modify("Now present", new AddOneIntegerCarrierModifier(), false);
+						}
+						
+					}, true, true).val.intValue()
 		);
 	}
 
@@ -105,21 +106,22 @@ public class ChangingValueCaheTest {
 	public void testModifySupportRecursiveCallsReplacingValue() {
 		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
 		try {
-			underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
-	
-				@Override
-				public IntegerCarrier apply(IntegerCarrier input) {
-					return underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
+			underTest.modify("Now present", new OneIntegerCarrierNewCreator(),
+					new Function<IntegerCarrier, IntegerCarrier>() {
+			
 						@Override
 						public IntegerCarrier apply(IntegerCarrier input) {
-							IntegerCarrier result = new IntegerCarrier();
-							result.val = 11;
-							return result;
+							return underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
+								@Override
+								public IntegerCarrier apply(IntegerCarrier input) {
+									IntegerCarrier result = new IntegerCarrier();
+									result.val = 11;
+									return result;
+								}
+							}, false);
 						}
-					}, false);
-				}
-				
-			}, new OneIntegerCarrierNewCreator(), true, true);
+						
+					}, true, true);
 			fail();
 		} catch (Exception e) {
 			assertTrue(e instanceof RuntimeException);

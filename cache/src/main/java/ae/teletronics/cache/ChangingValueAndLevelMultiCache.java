@@ -96,7 +96,7 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 	}
 	
 	@Override
-	protected V modifyImpl(K key, Function<V, V> modifier, Supplier<V> newCreator, boolean createIfNotExists, boolean supportRecursiveCalls) {
+	protected V modifyImpl(K key, Supplier<V> newCreator, Function<V, V> modifier, boolean createIfNotExists, boolean supportRecursiveCalls) {
 		V value = alreadyWorkingOn.get();
 		if (value != null) {
 			V newValue = ((modifier != null)?modifier:defaultModifier).apply(value);

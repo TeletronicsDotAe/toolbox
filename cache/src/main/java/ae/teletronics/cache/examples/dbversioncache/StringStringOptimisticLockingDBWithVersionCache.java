@@ -65,6 +65,14 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 		protected void put(final String key, final StoreRequest<String, Value> storeRequest, final boolean putInStore) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 			try {
 				innerCache.modify(key,
+						new Supplier<Long>() {
+							
+							@Override
+							public Long get() {
+								return -1L;
+							}
+							
+						},
 						new Function<Long, Long>() {
 	
 							@Override
@@ -79,14 +87,6 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 								}
 							}
 					
-						},
-						new Supplier<Long>() {
-			
-							@Override
-							public Long get() {
-								return -1L;
-							}
-							
 						}, true);
 			} catch (RuntimeException e) {
 				Throwable cause = e.getCause();

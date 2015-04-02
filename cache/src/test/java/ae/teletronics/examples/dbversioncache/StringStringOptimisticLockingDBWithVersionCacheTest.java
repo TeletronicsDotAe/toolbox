@@ -32,19 +32,19 @@ public class StringStringOptimisticLockingDBWithVersionCacheTest {
 				for (int i = 0; i < NO_UPDATES_PER_THREAD; i++) {
 					boolean doesNotAlreadyExistSeen = false;
 					do { 
-						final Value currentVV = (doesNotAlreadyExistSeen)?null:underTest.get("X");
+						final Value currentV = (doesNotAlreadyExistSeen)?null:underTest.get("X");
 						doesNotAlreadyExistSeen = false;
 						try {
 							underTest.put("X", new StoreRequest<String, Value>() {
 		
 								@Override
 								public Value getValue() {
-									return new Value((currentVV != null)?currentVV.getVersion():-1, (currentVV != null)?(currentVV.getValue() + "x"):"x");
+									return new Value((currentV != null)?currentV.getVersion():-1, (currentV != null)?(currentV.getValue() + "x"):"x");
 								}
 		
 								@Override
 								public StoreRequest.Operation getRequestedOperation() {
-									return (currentVV != null)?StoreRequest.Operation.UPDATE:StoreRequest.Operation.NEW;
+									return (currentV != null)?StoreRequest.Operation.UPDATE:StoreRequest.Operation.NEW;
 								}
 								
 							});

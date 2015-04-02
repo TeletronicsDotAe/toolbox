@@ -59,6 +59,10 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 
 		@Override
 		public void put(final String key, final StoreRequest<String, Value> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+			put(key, storeRequest, false);
+		}
+		
+		protected void put(final String key, final StoreRequest<String, Value> storeRequest, final boolean putInStore) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 			try {
 				innerCache.modify(key,
 						new Function<Long, Long>() {
@@ -68,7 +72,7 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 								try {
 									// Taking advantage of the fact that the cache itself in synchronizing on key - usable if we also just add to store in that synch block
 									Value newValue = versionCheck(key, storeRequest);
-									store.put(key, newValue);
+									if (putInStore) store.put(key, newValue);
 									return newValue.version;
 								} catch (Exception e) {
 									throw (e instanceof RuntimeException)?((RuntimeException)e):new RuntimeException(e);
@@ -118,7 +122,7 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 	
 	protected void putImpl(String key, StoreRequest<String, Value> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 		// Taking advantage of the fact that the cache itself in synchronizing on key - usable if we also just add to store in that synch block
-		cache.put(key, storeRequest);
+		((VersionCache)cache).put(key, storeRequest, true);
 	}
 
 }

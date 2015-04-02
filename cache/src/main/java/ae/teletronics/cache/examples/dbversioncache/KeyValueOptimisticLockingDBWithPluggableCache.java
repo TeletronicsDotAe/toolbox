@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentMap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 
-public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyValueOptimisticLockingDBWithPluggableCache.Value<V>> {
+public class KeyValueOptimisticLockingDBWithPluggableCache<K, VV, V extends KeyValueOptimisticLockingDBWithPluggableCache.Value<VV>> {
 	
 	public static class AlreadyExistsException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -30,14 +30,14 @@ public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyV
 		
 	}
 	
-	public interface StoreRequest<V, VV extends Value<V>> {
+	public interface StoreRequest<VV, V extends Value<VV>> {
 		
 		enum Operation {
 			NEW,
 			UPDATE
 		}
 		
-		VV getValue();
+		V getValue();
 		
 		Operation getRequestedOperation();
 		
@@ -46,9 +46,9 @@ public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyV
 	
 	// Pretend that the database actually use a store on disk, making it expensive
 	// to fetch values
-	protected ConcurrentMap<K, VV> store = new ConcurrentHashMap<K, VV>();
+	protected ConcurrentMap<K, V> store = new ConcurrentHashMap<K, V>();
 	// Much less expensive to fetch values from cache
-	protected Cache<K, V, VV> cache;
+	protected Cache<K, VV, V> cache;
 	
 	private final Interner<Integer> keyInterner;
 	
@@ -56,11 +56,11 @@ public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyV
 		keyInterner = Interners.newWeakInterner();
 	}
 	
-	public void initiatlize(Cache<K, V, VV> cache) {
+	public void initiatlize(Cache<K, VV, V> cache) {
 		this.cache = cache;		
 	}
 	
-	public void put(K key, StoreRequest<V, VV> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+	public void put(K key, StoreRequest<VV, V> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 		Object synchObject = getSynchObject(key);
 		if (synchObject != null) {
 			synchronized(synchObject) {
@@ -75,13 +75,13 @@ public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyV
 		return keyInterner.intern(key.hashCode());
 	}
 	
-	protected void putImpl(K key, StoreRequest<V, VV> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
-		VV newValue = versionCheck(key, storeRequest);
+	protected void putImpl(K key, StoreRequest<VV, V> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+		V newValue = versionCheck(key, storeRequest);
 		store.put(key, newValue);
 		cache.put(key, storeRequest);
 	}
 	
-	protected final VV versionCheck(K key, StoreRequest<V, VV> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+	protected final V versionCheck(K key, StoreRequest<VV, V> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 		Long currentVersion = getCurrentVersion(key);
 		if ((storeRequest.getRequestedOperation() == StoreRequest.Operation.NEW) &&	(currentVersion != null)) {
 			throw new AlreadyExistsException();
@@ -93,20 +93,42 @@ public class KeyValueOptimisticLockingDBWithPluggableCache<K, V, VV extends KeyV
 				throw new VersionConflictException();
 			}
 		}
-		VV newValue = storeRequest.getValue();
+		V newValue = storeRequest.getValue();
 		newValue.setVersion((storeRequest.getRequestedOperation() == StoreRequest.Operation.NEW)?0:(newValue.getVersion()+1));
 		return newValue;
 	}
 	
-	public VV get(K key) {
-		VV cacheValue = cache.get(key);
-		return (cacheValue != null)?cacheValue:store.get(key);
+	public V get(K key) {
+		V cacheValue = cache.get(key);
+		if (cacheValue != null) {
+			return cacheValue;
+		} else {
+			final V storeValue = store.get(key);
+			try {
+				if (storeValue != null) cache.put(key, new StoreRequest<VV, V>() {
+					
+					@Override
+					public V getValue() {
+						return storeValue;
+					}
+	
+					@Override
+					public StoreRequest.Operation getRequestedOperation() {
+						return StoreRequest.Operation.NEW;
+					}
+					
+				});
+			} catch (Exception e) {
+				// ignore
+			}
+			return storeValue;
+		}
 	}
 	
 	private Long getCurrentVersion(K key) {
 		Long currentVersion = cache.getVersion(key);
 		if (currentVersion != null) return currentVersion;
-		VV currentValue = get(key);
+		V currentValue = get(key);
 		return (currentValue != null)?currentValue.getVersion():null;
 	}
 	

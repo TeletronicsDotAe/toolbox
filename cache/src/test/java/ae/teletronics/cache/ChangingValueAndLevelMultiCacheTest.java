@@ -9,7 +9,7 @@ public class ChangingValueAndLevelMultiCacheTest extends ChangingValueCaheTest {
 
 	@Override
 	protected <V> ChangingValueCache<String, V> createCache(Function<V, V> addOneModifier, Supplier<V> zeroNewCreator) {
-		Cache<String, V> defaultInnerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
+		Cache<String, V> defaultInnerCache = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE).build();
 		ChangingValueAndLevelMultiCache.Builder<String, V> underTestBuilder = ChangingValueAndLevelMultiCache.builder();
 		return underTestBuilder
 				.cache(defaultInnerCache)

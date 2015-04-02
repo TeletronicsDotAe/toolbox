@@ -13,7 +13,7 @@ import com.google.common.cache.CacheBuilder;
 
 public class ChangingValueCaheTest {
 
-	protected static final int MAX_SIZE = 10;
+	protected static final int MAX_CACHE_SIZE = 10;
 	
 	private ChangingValueCache<String, Integer> underTest;
 	
@@ -23,7 +23,7 @@ public class ChangingValueCaheTest {
 	}
 	
 	protected <V> ChangingValueCache<String, V> createCache(Function<V, V> addOneModifier, Supplier<V> zeroNewCreator) {
-		Cache<String, V> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
+		Cache<String, V> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE).build();
 		ChangingValueCache.Builder<String, V> underTestBuilder = ChangingValueCache.builder();
 		return underTestBuilder
 				.cache(innerCache)
@@ -56,14 +56,14 @@ public class ChangingValueCaheTest {
 	public void testSize() {
 		assertEquals(0, underTest.size());
 		
-		for (int i = 1; i <= MAX_SIZE; i++) {
+		for (int i = 1; i <= MAX_CACHE_SIZE; i++) {
 			underTest.getAddIfNotPresent("key" + i);
 			assertEquals(i, underTest.size());
 		}
 		
-		for (int i = MAX_SIZE+1; i <= MAX_SIZE*2; i++) {
+		for (int i = MAX_CACHE_SIZE+1; i <= MAX_CACHE_SIZE*2; i++) {
 			underTest.getAddIfNotPresent("key" + i);
-			assertEquals(MAX_SIZE, underTest.size());
+			assertEquals(MAX_CACHE_SIZE, underTest.size());
 		}
 	}
 	

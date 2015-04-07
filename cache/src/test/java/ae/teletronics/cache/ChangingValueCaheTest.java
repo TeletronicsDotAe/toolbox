@@ -19,16 +19,16 @@ public class ChangingValueCaheTest {
 	
 	@Before
 	public void before() {
-		underTest = createCache(new AddOneModifier(), new ZeroNewCreator());
+		underTest = createCacheBuilder(new ZeroNewCreator(), new AddOneModifier()).build();
 	}
 	
-	protected <V> ChangingValueCache<String, V> createCache(Function<V, V> addOneModifier, Supplier<V> zeroNewCreator) {
+	protected <V> ChangingValueCache.Builder<String, V> createCacheBuilder(Supplier<V> defaultNewCreator, Function<V, V> defaultModifier) {
 		Cache<String, V> innerCache = CacheBuilder.newBuilder().maximumSize(MAX_CACHE_SIZE).build();
 		ChangingValueCache.Builder<String, V> underTestBuilder = ChangingValueCache.builder();
 		return underTestBuilder
 				.cache(innerCache)
-				.defaultModifier(addOneModifier)
-				.defaultNewCreator(zeroNewCreator).build();
+				.defaultNewCreator(defaultNewCreator)
+				.defaultModifier(defaultModifier);
 	}
 	
 	@Test
@@ -88,13 +88,13 @@ public class ChangingValueCaheTest {
 
 	@Test
 	public void testModifySupportRecursiveCalls() {
-		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
+		final ChangingValueCache<String, IntegerCarrier> underTest = createCacheBuilder(new ZeroIntegerCarrierNewCreator(), new AddOneIntegerCarrierModifier()).build();
 		assertEquals(6,
 			underTest.modify("Now present", new FiveIntegerCarrierNewCreator(),
 					new Function<IntegerCarrier, IntegerCarrier>() {
 			
 						@Override
-						public IntegerCarrier apply(IntegerCarrier input) {
+						public IntegerCarrier apply(IntegerCarrier value) {
 							return underTest.modify("Now present", new AddOneIntegerCarrierModifier(), false);
 						}
 						
@@ -104,16 +104,16 @@ public class ChangingValueCaheTest {
 
 	@Test
 	public void testModifySupportRecursiveCallsReplacingValue() {
-		final ChangingValueCache<String, IntegerCarrier> underTest = createCache(new AddOneIntegerCarrierModifier(), new ZeroIntegerCarrierNewCreator());
+		final ChangingValueCache<String, IntegerCarrier> underTest = createCacheBuilder(new ZeroIntegerCarrierNewCreator(), new AddOneIntegerCarrierModifier()).build();
 		try {
 			underTest.modify("Now present", new OneIntegerCarrierNewCreator(),
 					new Function<IntegerCarrier, IntegerCarrier>() {
 			
 						@Override
-						public IntegerCarrier apply(IntegerCarrier input) {
+						public IntegerCarrier apply(IntegerCarrier value) {
 							return underTest.modify("Now present", new Function<IntegerCarrier, IntegerCarrier>() {
 								@Override
-								public IntegerCarrier apply(IntegerCarrier input) {
+								public IntegerCarrier apply(IntegerCarrier value) {
 									IntegerCarrier result = new IntegerCarrier();
 									result.val = 11;
 									return result;
@@ -232,8 +232,8 @@ public class ChangingValueCaheTest {
 	private class NoModificationModifier implements Function<Integer, Integer> {
 
 		@Override
-		public Integer apply(Integer input) {
-			return input;
+		public Integer apply(Integer value) {
+			return value;
 		}
 		
 	}
@@ -241,8 +241,8 @@ public class ChangingValueCaheTest {
 	private class AddOneModifier implements Function<Integer, Integer> {
 
 		@Override
-		public Integer apply(Integer input) {
-			return input + 1;
+		public Integer apply(Integer value) {
+			return value + 1;
 		}
 		
 	}
@@ -254,9 +254,9 @@ public class ChangingValueCaheTest {
 	private class AddOneIntegerCarrierModifier implements Function<IntegerCarrier, IntegerCarrier> {
 
 		@Override
-		public IntegerCarrier apply(IntegerCarrier input) {
-			input.val += 1;
-			return input;
+		public IntegerCarrier apply(IntegerCarrier value) {
+			value.val += 1;
+			return value;
 		}
 		
 	}

@@ -4,11 +4,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.runner.notification.RunListener.ThreadSafe;
-
+import net.jcip.annotations.ThreadSafe;
 import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCache;
-
 import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCacheTest;
+
 
 //TODO java8 import java.util.function.Function;
 //TODO java8 import java.util.function.Supplier;

@@ -155,7 +155,7 @@ public class ChangingValueCaheTest {
 				return 2 < input && input < 5;
 			}
 			
-		}, true);
+		});
 		
 		// None should have their value changes except...
 		assertEquals(2, underTest.getIfPresent("Modify 2").intValue());

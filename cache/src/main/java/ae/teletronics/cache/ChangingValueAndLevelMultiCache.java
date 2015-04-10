@@ -72,7 +72,7 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 		/**
 		 * Set the calculator used to calculate the level of a particular cache-entry
 		 * @param levelCalculator Given the cache-key and cache-level calculate the level of the cache-entry
-		 * @return The calculated level
+		 * @return This builder
 		 */
 		public Builder<K,V> levelCalculator(BiFunction<K, V, Integer> levelCalculator) {
 			getInstance().levelCalculator = levelCalculator;
@@ -89,7 +89,7 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 		 * @param levelFrom The lower boundary on cache-entry-level for this cache to be used
 		 * @param levelTo The higher boundary on cache-entry-level for this cache to be used
 		 * @param name A logical name for the cache
-		 * @return
+		 * @return This builder
 		 */
 		public Builder<K,V> addCache(Cache<K,V> cache, int levelFrom, int levelTo, String name) {
 			getInstance().caches.put(new Interval(levelFrom, levelTo), cache);
@@ -140,6 +140,10 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 	
 	/**
 	 * Get a builder for building a {@link ChangingValueAndLevelMultiCache} instance
+	 * 
+ 	 * @param <K> Type of the cache-key of the built cache
+	 * @param <V> Type of the cache-value of the built cache
+	 * 
 	 * @return The builder to be used
 	 */
 	public static <K, V> Builder<K, V> builder() {

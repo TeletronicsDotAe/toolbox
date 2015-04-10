@@ -105,6 +105,10 @@ public class ChangingValueCache<K, V> {
 	
 	/**
 	 * Get a builder for building a {@link ChangingValueCache} instance
+	 * 
+ 	 * @param <K> Type of the cache-key of the built cache
+	 * @param <V> Type of the cache-value of the built cache
+	 * 
 	 * @return The builder to be used
 	 */
 	public static <K, V> Builder<K, V> builder() {
@@ -112,45 +116,65 @@ public class ChangingValueCache<K, V> {
 	}
 	
 	/**
-	 * Calling {@link #modify(K, Supplier, Function, boolean)} (and returning value from) with
+	 * Calling {@link #modify(Object, Supplier, Function, boolean)} (and returning value from) with
 	 * * key (K) Provided key
-	 * * newCreator (Supplier<V>) null
-	 * * modifier (Function<V, V>) null
+	 * * newCreator (Supplier{@literal <V>}) null
+	 * * modifier (Function{@literal <V, V>}) null
 	 * * createIfNotExists (boolean) Provided createIfNotExist
+	 * 
+	 * @param key To be forwarded to modify call
+	 * @param createIfNotExists To be forwarded to modify call
+	 * @return  The value now on the cache-entry
 	 */
 	public final V modify(K key, boolean createIfNotExists) {
 		return modify(key, null, null, createIfNotExists);
 	}
 
 	/**
-	 * Calling {@link #modify(K, Supplier, Function, boolean)} (and returning value from) with
+	 * Calling {@link #modify(Object, Supplier, Function, boolean)} (and returning value from) with
 	 * * key (K) Provided key
-	 * * newCreator (Supplier<V>) null
-	 * * modifier (Function<V, V>) Provided modifier
+	 * * newCreator (Supplier{@literal <V>}) null
+	 * * modifier (Function{@literal <V, V>}) Provided modifier
 	 * * createIfNotExists (boolean) Provided createIfNotExist
+	 * 
+	 * @param key To be forwarded to modify call
+	 * @param modifier To be forwarded to modify call
+	 * @param createIfNotExists To be forwarded to modify call
+	 * @return  The value now on the cache-entry
 	 */
 	public final V modify(K key, Function<V, V> modifier, boolean createIfNotExists) {
 		return modify(key, null, modifier, createIfNotExists);
 	}
 
 	/**
-	 * Calling {@link #modify(K, Supplier, Function, boolean)} (and returning value from) with
+	 * Calling {@link #modify(Object, Supplier, Function, boolean)} (and returning value from) with
 	 * * key (K) Provided key
-	 * * newCreator (Supplier<V>) Provided new-creator
-	 * * modifier (Function<V, V>) null
+	 * * newCreator (Supplier{@literal <V>}) Provided new-creator
+	 * * modifier (Function{@literal <V, V>}) null
 	 * * createIfNotExists (boolean) Provided createIfNotExist
+	 * 
+	 * @param key To be forwarded to modify call
+	 * @param newCreator To be forwarded to modify call
+	 * @param createIfNotExists To be forwarded to modify call
+	 * @return  The value now on the cache-entry
 	 */
 	public final V modify(K key, Supplier<V> newCreator, boolean createIfNotExists) {
 		return modify(key, newCreator, null, createIfNotExists);
 	}
 
 	/**
-	 * Calling {@link #modify(K, Supplier, Function, boolean, boolean)} (and returning value from) with
+	 * Calling {@link #modify(Object, Supplier, Function, boolean, boolean)} (and returning value from) with
 	 * * key (K) Provided key
-	 * * newCreator (Supplier<V>) Provided new-creator
-	 * * modifier (Function<V, V>) Provided modifier
+	 * * newCreator (Supplier{@literal <V>}) Provided new-creator
+	 * * modifier (Function{@literal <V, V>}) Provided modifier
 	 * * createIfNotExists (boolean) Provided createIfNotExist
 	 * * supportRecursiveCalls (boolean) false
+	 * 
+	 * @param key To be forwarded to modify call
+	 * @param newCreator To be forwarded to modify call
+	 * @param modifier To be forwarded to modify call
+	 * @param createIfNotExists To be forwarded to modify call
+	 * @return  The value now on the cache-entry
 	 */
 	public final V modify(K key, Supplier<V> newCreator, Function<V, V> modifier, boolean createIfNotExists) {
 		return modify(key, newCreator, modifier, createIfNotExists, false);
@@ -176,10 +200,13 @@ public class ChangingValueCache<K, V> {
 	
 	/**
 	 * Calling {@link #modifyAll(Predicate, Predicate, Function)} with
-	 * * keyPredicate (Predicate<K>) Provided keyPredicate
-	 * * valuePredicate (Predicate<V>) Provided valuePredicate
-	 * * modifier (Function<V, V>) null
+	 * * keyPredicate (Predicate{@literal <K>}) Provided keyPredicate
+	 * * valuePredicate (Predicate{@literal <V>}) Provided valuePredicate
+	 * * modifier (Function{@literal <V, V>}) null
 	 * * supportRecursiveCalls (boolean) false
+	 * 
+	 * @param keyPredicate To be forwarded to modifyAll call
+	 * @param valuePredicate To be forwarded to modifyAll call
 	 */
 	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate) {
 		modifyAll(keyPredicate, valuePredicate, null);
@@ -187,20 +214,24 @@ public class ChangingValueCache<K, V> {
 
 	/**
 	 * Calling {@link #modifyAll(Predicate, Predicate, Function, boolean)} with
-	 * * keyPredicate (Predicate<K>) Provided keyPredicate
-	 * * valuePredicate (Predicate<V>) Provided valuePredicate
-	 * * modifier (Function<V, V>) Provided modifier
+	 * * keyPredicate (Predicate{@literal <K>}) Provided keyPredicate
+	 * * valuePredicate (Predicate{@literal <V>}) Provided valuePredicate
+	 * * modifier (Function{@literal <V, V>}) Provided modifier
 	 * * supportRecursiveCalls (boolean) false
+	 * 
+	 * @param keyPredicate To be forwarded to modifyAll call
+	 * @param valuePredicate To be forwarded to modifyAll call
+	 * @param modifier To be forwarded to modifyAll call
 	 */
 	public final void modifyAll(Predicate<K> keyPredicate, Predicate<V> valuePredicate, Function<V, V> modifier) {
 		modifyAll(keyPredicate, valuePredicate, modifier, false);
 	}
 
 	/**
-	 * Sequentially calling {@link #modify(K, Supplier, Function, boolean, boolean)} for a selected set of existing cache-entries. Called with
+	 * Sequentially calling {@link #modify(Object, Supplier, Function, boolean, boolean)} for a selected set of existing cache-entries. Called with
 	 * * key (K) The cache-key of the cache-entry in the selected set
-	 * * newCreator (Supplier<V>) null
-	 * * modifier (Function<V, V>) Provided modifier
+	 * * newCreator (Supplier{@literal <V>}) null
+	 * * modifier (Function{@literal <V, V>}) Provided modifier
 	 * * boolean createIfNotExists false
 	 * * boolean supportRecursiveCalls Provided supportRecursiveCalls 
 	 * 
@@ -294,9 +325,12 @@ public class ChangingValueCache<K, V> {
 	}
 	
 	/**
-	 * Calling {@link #getAddIfNotPresent(K, Supplier)} (and returning value from) with
+	 * Calling {@link #getAddIfNotPresent(Object, Supplier)} (and returning value from) with
 	 * * key (K) Provided key
-	 * * newCreator (Supplier<V>) null
+	 * * newCreator (Supplier{@literal <V>}) null
+	 * 
+	 * @param key To be forwarded to getAddIfNotPresent call
+	 * @return The cache-value
 	 */
 	public V getAddIfNotPresent(K key) {
 		return getAddIfNotPresent(key, null);

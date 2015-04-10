@@ -5,11 +5,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import net.jcip.annotations.ThreadSafe;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCache;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCacheTest;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithVersionCache;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithVersionCacheTest;
-
 
 // TODO java8 import java.util.function.Function;
 // TODO java8 import java.util.function.Predicate;
@@ -26,10 +21,6 @@ import com.google.common.collect.Interners;
  * modify operation - knowing about how to create the initial value if the entry is not already present in the cache, and knowing about how to 
  * modify the value (whether or not it existed in cache already)
  * 
- * For examples of usage see the code of
- * * {@link StringStringOptimisticLockingDBWithVersionCache} (and the test of it {@link StringStringOptimisticLockingDBWithVersionCacheTest})
- * * {@link StringStringOptimisticLockingDBWithKeyStartsWithCache} (and the test of it {@link StringStringOptimisticLockingDBWithKeyStartsWithCacheTest})
- *
  * @param <K> Type of the cache-key
  * @param <V> Type of the cache-value
  */

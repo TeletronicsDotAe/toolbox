@@ -5,9 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.jcip.annotations.ThreadSafe;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCache;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithKeyStartsWithCacheTest;
-
 
 //TODO java8 import java.util.function.Function;
 //TODO java8 import java.util.function.Supplier;
@@ -19,9 +16,6 @@ import com.google.common.cache.Cache;
 /**
  * Same as {@link ChangingValueCache}, but with prioritization of the cache-entries. Cache-entries are given a priority (level) and non-overlapping
  * intervals of levels define different prioritizations. When a cache-value is modified the level and hence the prioritization of the cache-entry can change 
- * 
- * For examples of usage see the code of
- * * {@link StringStringOptimisticLockingDBWithKeyStartsWithCache} (and the test of it {@link StringStringOptimisticLockingDBWithKeyStartsWithCacheTest})
  *
  * @param <K> Type of the cache-key
  * @param <V> Type of the cache-value

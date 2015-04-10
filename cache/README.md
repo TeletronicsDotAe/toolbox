@@ -15,6 +15,6 @@ See [StringStringOptimisticLockingDBWithKeyStartsWithCache](src/main/java/ae/tel
     <dependency>
         <groupId>ae.teletronics.toolbox</groupId>
         <artifactId>cache</artifactId>
-        <version>...</version>
+        <version>0.8</version>
     </dependency>
 ```

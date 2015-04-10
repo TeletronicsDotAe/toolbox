@@ -6,43 +6,14 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.cache.CacheBuilder;
 
-public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOptimisticLockingDBWithPluggableCache<String, String, StringStringOptimisticLockingDBWithVersionCache.Value> {
+public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOptimisticLockingDBWithPluggableCache<String, String, StringValueContainer> {
 	
-	public static class Value implements KeyValueOptimisticLockingDBWithPluggableCache.Value<String> {
-		
-		private Long version;
-		private String text;
-		
-		public Value(Long version, String text) {
-			this.version = version;
-			this.text = text;
-		}
-
-		@Override
-		public void setVersion(Long newVersion) {
-			version = newVersion;
-		}
-
-		@Override
-		public Long getVersion() {
-			return version;
-		}
-
-		@Override
-		public String getValue() {
-			return text;
-		}
-		
-	}
-
-	private class VersionCache implements Cache<String, String, Value> {
-		
-		private static final long MAX_SIZE = 1000;
+	private class VersionCache implements Cache<String, String, StringValueContainer> {
 		
 		private final ChangingValueCache<String, Long> innerCache;
 		
-		private VersionCache() {
-			com.google.common.cache.Cache<String, Long> innerInnerCache = CacheBuilder.newBuilder().maximumSize(MAX_SIZE).build();
+		private VersionCache(int cacheSize) {
+			com.google.common.cache.Cache<String, Long> innerInnerCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build();
 			ChangingValueCache.Builder<String, Long> innerCacheBuilder = ChangingValueCache.builder();  
 			innerCache = innerCacheBuilder
 					.cache(innerInnerCache)
@@ -58,11 +29,11 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 		}
 
 		@Override
-		public void put(final String key, final StoreRequest<String, Value> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+		public void put(final String key, final StoreRequest<String, StringValueContainer> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 			put(key, storeRequest, false);
 		}
 		
-		protected void put(final String key, final StoreRequest<String, Value> storeRequest, final boolean putInStore) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+		protected void put(final String key, final StoreRequest<String, StringValueContainer> storeRequest, final boolean putInStore) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
 			try {
 				innerCache.modify(key,
 						new Supplier<Long>() {
@@ -78,10 +49,10 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 							@Override
 							public Long apply(Long input) {
 								try {
-									// Taking advantage of the fact that the cache itself in synchronizing on key - usable if we also just add to store in that synch block
-									Value newValue = versionCheck(key, storeRequest);
+									// Taking advantage of the fact that the cache itself is synchronizing on key - usable if we also just add to store in that synch block
+									StringValueContainer newValue = versionCheck(key, storeRequest);
 									if (putInStore) store.put(key, newValue);
-									return newValue.version;
+									return newValue.getVersion();
 								} catch (Exception e) {
 									throw (e instanceof RuntimeException)?((RuntimeException)e):new RuntimeException(e);
 								}
@@ -98,7 +69,7 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 		}
 
 		@Override
-		public Value get(String key) {
+		public StringValueContainer get(String key) {
 			return null;
 		}
 		
@@ -109,19 +80,19 @@ public class StringStringOptimisticLockingDBWithVersionCache extends KeyValueOpt
 		
 	}
 	
-	public StringStringOptimisticLockingDBWithVersionCache() {
+	public StringStringOptimisticLockingDBWithVersionCache(int cacheSize) {
 		super();
-		initiatlize(new VersionCache());
+		initialize(new VersionCache(cacheSize));
 	}
 	
 	@Override
-	// Taking advantage of the fact that the cache itself in synchronizing on key - usable if we also just add to store in that synch block
+	// Taking advantage of the fact that the cache itself is synchronizing on key - usable if we also just add to store in that synch block
 	protected Object getSynchObject(String key) {
 		return null;
 	}
 	
-	protected void putImpl(String key, StoreRequest<String, Value> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
-		// Taking advantage of the fact that the cache itself in synchronizing on key - usable if we also just add to store in that synch block
+	protected void putImpl(String key, StoreRequest<String, StringValueContainer> storeRequest) throws AlreadyExistsException, DoesNotAlreadyExistException, VersionConflictException {
+		// Taking advantage of the fact that the cache itself is synchronizing on key - usable if we also just add to store in that synch block
 		((VersionCache)cache).put(key, storeRequest, true);
 	}
 

@@ -9,7 +9,7 @@ import ae.teletronics.cache.examples.dbversioncache.KeyValueOptimisticLockingDBW
 import ae.teletronics.cache.examples.dbversioncache.KeyValueOptimisticLockingDBWithPluggableCache.StoreRequest;
 import ae.teletronics.cache.examples.dbversioncache.KeyValueOptimisticLockingDBWithPluggableCache.VersionConflictException;
 import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithVersionCache;
-import ae.teletronics.cache.examples.dbversioncache.StringStringOptimisticLockingDBWithVersionCache.Value;
+import ae.teletronics.cache.examples.dbversioncache.StringValueContainer;
 
 public class StringStringOptimisticLockingDBWithVersionCacheTest {
 
@@ -17,7 +17,7 @@ public class StringStringOptimisticLockingDBWithVersionCacheTest {
 	
 	@Before
 	public void before() {
-		underTest = new StringStringOptimisticLockingDBWithVersionCache();
+		underTest = new StringStringOptimisticLockingDBWithVersionCache(1000);
 	}
 	
 	@Test
@@ -25,45 +25,7 @@ public class StringStringOptimisticLockingDBWithVersionCacheTest {
 		final int NO_UPDATES_PER_THREAD = 10;
 		final int NO_THREADS = 5;
 		
-		Runnable task = new Runnable() {
-
-			@Override
-			public void run() {
-				for (int i = 0; i < NO_UPDATES_PER_THREAD; i++) {
-					boolean doesNotAlreadyExistSeen = false;
-					do { 
-						final Value currentV = (doesNotAlreadyExistSeen)?null:underTest.get("X");
-						doesNotAlreadyExistSeen = false;
-						try {
-							underTest.put("X", new StoreRequest<String, Value>() {
-		
-								@Override
-								public Value getValue() {
-									return new Value((currentV != null)?currentV.getVersion():-1, (currentV != null)?(currentV.getValue() + "x"):"x");
-								}
-		
-								@Override
-								public StoreRequest.Operation getRequestedOperation() {
-									return (currentV != null)?StoreRequest.Operation.UPDATE:StoreRequest.Operation.NEW;
-								}
-								
-							});
-						} catch (AlreadyExistsException e) {
-							// take another round - get the newest and try update again
-							continue;
-						} catch (DoesNotAlreadyExistException e) {
-							// take another round - but we know that it is not there
-							doesNotAlreadyExistSeen = true;
-							continue;
-						} catch (VersionConflictException e) {
-							// take another round - get the newest and try update again
-							continue;
-						}
-						break;
-					} while (true);
-				}
-			}			
-		};
+		Runnable task = new MyRunnable(NO_UPDATES_PER_THREAD);
 		
 		Thread[] threads = new Thread[NO_THREADS];
 		for (int i = 0; i < threads.length; i++) {
@@ -85,6 +47,53 @@ public class StringStringOptimisticLockingDBWithVersionCacheTest {
 			sb.append("x");
 		}
 		Assert.assertEquals(sb.toString(), underTest.get("X").getValue());
+	}
+	
+	private class MyRunnable implements Runnable {
+		
+		private final int numberOfUpdates;
+		
+		private MyRunnable(int numberOfUpdates) {
+			this.numberOfUpdates = numberOfUpdates;
+		}
+		
+		@Override
+		public void run() {
+			for (int i = 0; i < numberOfUpdates; i++) {
+				boolean doesNotAlreadyExistSeen = false;
+				do { 
+					final StringValueContainer valueContainer = (doesNotAlreadyExistSeen)?null:underTest.get("X");
+					doesNotAlreadyExistSeen = false;
+					try {
+						underTest.put("X", new StoreRequest<String, StringValueContainer>() {
+	
+							@Override
+							public StringValueContainer getValueContainer() {
+								return new StringValueContainer((valueContainer != null)?valueContainer.getVersion():-1, (valueContainer != null)?(valueContainer.getValue() + "x"):"x");
+							}
+	
+							@Override
+							public StoreRequest.Operation getRequestedOperation() {
+								return (valueContainer != null)?StoreRequest.Operation.UPDATE:StoreRequest.Operation.NEW;
+							}
+							
+						});
+					} catch (AlreadyExistsException e) {
+						// take another round - get the newest and try update again
+						continue;
+					} catch (DoesNotAlreadyExistException e) {
+						// take another round - but we know that it is not there
+						doesNotAlreadyExistSeen = true;
+						continue;
+					} catch (VersionConflictException e) {
+						// take another round - get the newest and try update again
+						continue;
+					}
+					break;
+				} while (true);
+			}
+		}			
+
 	}
 	
 }

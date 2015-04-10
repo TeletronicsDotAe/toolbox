@@ -8,7 +8,7 @@
     <version>0.9</version>
   </parent>
   
-  <groupId>ae.teletronics.cache</groupId>
+  <groupId>ae.teletronics.toolbox</groupId>
   <artifactId>cache</artifactId>
   <packaging>jar</packaging>
   <version>0.2</version>

@@ -1,4 +1,4 @@
-package ae.teletronics.examples.dbversioncache;
+package ae.teletronics.cache.examples.dbversioncache;
 
 import org.junit.Assert;
 import org.junit.Before;

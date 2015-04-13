@@ -11,7 +11,7 @@
   <groupId>ae.teletronics.toolbox</groupId>
   <artifactId>cache</artifactId>
   <packaging>jar</packaging>
-  <version>0.8</version>
+  <version>0.9</version>
   <name>cache</name>
   <dependencies>
     <dependency>

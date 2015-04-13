@@ -110,7 +110,7 @@ public class ChangingValueAndLevelMultiCache<K, V> extends ChangingValueCache<K,
 		
 	}
 	
-	protected static class Interval {
+	public static class Interval {
 		
 		private int from;
 		private int to;

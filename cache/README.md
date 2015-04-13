@@ -15,6 +15,12 @@ See [StringStringOptimisticLockingDBWithKeyStartsWithCache](src/main/java/ae/tel
     <dependency>
         <groupId>ae.teletronics.toolbox</groupId>
         <artifactId>cache</artifactId>
-        <version>0.8</version>
+        <version>0.9</version>
     </dependency>
 ```
+
+## Feedback
+
+Questions, comments etc. can be directed to open-source@teletronics.ae
+
+We are hiring in Dubai. Have a look at www.teletronics.ae
